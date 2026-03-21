@@ -64,6 +64,8 @@ fi
 if [[ -d "$INSTALL_DIR/.git" ]]; then
     echo "  Updating existing install..."
     git -C "$INSTALL_DIR" pull --ff-only
+    # Re-exec the freshly pulled version of this script so we run the latest
+    exec bash "$INSTALL_DIR/install.sh" "$@"
 elif [[ -f "$(dirname "$0")/$SCRIPT" ]]; then
     SRC_DIR="$(cd "$(dirname "$0")" && pwd)"
     echo "  Installing from local source..."
