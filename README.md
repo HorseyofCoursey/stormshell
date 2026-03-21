@@ -34,12 +34,8 @@ Designed for **Raspberry Pi Zero 2W** but works on any Pi running Raspberry Pi O
 ## Installation
 
 ```bash
-git clone https://github.com/HorseyofCoursey/stormshell.git
-cd stormshell
-chmod +x install.sh
-sudo ./install.sh
+curl -sSL https://raw.githubusercontent.com/HorseyofCoursey/stormshell/main/install.sh | sudo bash
 ```
-
 The installer will ask for your location and installs a `stormshell` command system-wide.
 
 ---
