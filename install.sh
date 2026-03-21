@@ -76,18 +76,20 @@ fi
 
 chmod +x "$INSTALL_DIR/$SCRIPT"
 
-sed -i \
-    -e "s|^DEFAULT_LOCATION = .*|DEFAULT_LOCATION = \"$LOCATION\"|" \
-    -e "s|^DEFAULT_COUNTRY  = .*|DEFAULT_COUNTRY  = \"$COUNTRY\"|" \
-    "$INSTALL_DIR/$SCRIPT"
-
-[[ -n "$UNITS" ]] && sed -i \
-    "s|^TEMP_UNIT        = .*|TEMP_UNIT        = \"$UNITS\"|" \
-    "$INSTALL_DIR/$SCRIPT"
-
-[[ -n "$WIND" ]] && sed -i \
-    "s|^WIND_UNIT        = .*|WIND_UNIT        = \"$WIND\"|" \
-    "$INSTALL_DIR/$SCRIPT"
+python3 - "$INSTALL_DIR/$SCRIPT" "$LOCATION" "$COUNTRY" "$UNITS" "$WIND" << 'PYEOF'
+import sys, re
+script, location, country, units, wind = sys.argv[1:]
+with open(script) as f:
+    src = f.read()
+src = re.sub(r'^DEFAULT_LOCATION = .*', f'DEFAULT_LOCATION = "{location}"', src, flags=re.M)
+src = re.sub(r'^DEFAULT_COUNTRY  = .*', f'DEFAULT_COUNTRY  = "{country}"',  src, flags=re.M)
+if units:
+    src = re.sub(r'^TEMP_UNIT        = .*', f'TEMP_UNIT        = "{units}"', src, flags=re.M)
+if wind:
+    src = re.sub(r'^WIND_UNIT        = .*', f'WIND_UNIT        = "{wind}"',  src, flags=re.M)
+with open(script, 'w') as f:
+    f.write(src)
+PYEOF
 
 echo "  [OK] Script installed to $INSTALL_DIR"
 
