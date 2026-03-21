@@ -98,10 +98,9 @@ LAUNCH_ARGS="--location \"$LOCATION\""
 [[ -n "$UNITS"   ]] && LAUNCH_ARGS="$LAUNCH_ARGS --units $UNITS"
 [[ -n "$WIND"    ]] && LAUNCH_ARGS="$LAUNCH_ARGS --wind $WIND"
 
-cat > /usr/local/bin/stormshell << EOF
-#!/bin/bash
-exec python3 $INSTALL_DIR/$SCRIPT $LAUNCH_ARGS "\$@"
-EOF
+printf '#!/bin/bash\nexec python3 %s/%s %s "$@"\n' \
+    "$INSTALL_DIR" "$SCRIPT" "$LAUNCH_ARGS" \
+    > /usr/local/bin/stormshell
 chmod +x /usr/local/bin/stormshell
 echo "  [OK] Launcher: /usr/local/bin/stormshell"
 
@@ -114,30 +113,8 @@ if $KIOSK; then
         apt-get install -y console-setup fonts-terminus > /dev/null
     fi
 
-    cat > "/etc/systemd/system/${SERVICE_NAME}.service" << EOF
-[Unit]
-Description=StormShell weather display
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-User=pi
-Group=pi
-StandardInput=tty
-StandardOutput=tty
-TTYPath=/dev/tty1
-TTYReset=yes
-TTYVHangup=yes
-ExecStartPre=/bin/sleep 5
-ExecStartPre=/usr/bin/setfont /usr/share/consolefonts/Uni2-TerminusBold28x14.psf.gz
-ExecStart=/usr/local/bin/stormshell
-Restart=on-failure
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-EOF
+    printf '[Unit]\nDescription=StormShell weather display\nAfter=network-online.target\nWants=network-online.target\n\n[Service]\nType=simple\nUser=pi\nGroup=pi\nStandardInput=tty\nStandardOutput=tty\nTTYPath=/dev/tty1\nTTYReset=yes\nTTYVHangup=yes\nExecStartPre=/bin/sleep 5\nExecStartPre=/usr/bin/setfont /usr/share/consolefonts/Uni2-TerminusBold28x14.psf.gz\nExecStart=/usr/local/bin/stormshell\nRestart=on-failure\nRestartSec=10\n\n[Install]\nWantedBy=multi-user.target\n' \
+        > "/etc/systemd/system/${SERVICE_NAME}.service"
 
     systemctl daemon-reload
     systemctl enable "$SERVICE_NAME"
