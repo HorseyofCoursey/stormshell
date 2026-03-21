@@ -41,7 +41,7 @@ from datetime import datetime
 
 # ─── Config ───────────────────────────────────────────────────────────────────
 
-DEFAULT_LOCATION = "Skokie, IL"
+DEFAULT_LOCATION = "Shangri-la"
 DEFAULT_COUNTRY  = ""           # empty = let Nominatim search globally
 REFRESH_SECONDS  = 300
 ANIMATE_FPS      = 3
@@ -1773,17 +1773,17 @@ if __name__ == "__main__":
         epilog="""
 Examples:
   stormshell --location "Chicago"
-  stormshell --location "60076"
+  stormshell --location "60602"
   stormshell --location "London" --country gb
   stormshell --location "Tokyo" --country jp
-  stormshell --display --location "Chicago"
+  stormshell --display --location "Hong Kong"
   stormshell --display --location "London" --country gb
   stormshell --preview
   stormshell --preview --condition storm
         """,
     )
     ap.add_argument("--location",  default=DEFAULT_LOCATION, metavar="PLACE",
-                    help="City name, ZIP code, or postal code (default: Skokie, IL)")
+                    help="City name, ZIP code, or postal code")
     ap.add_argument("--country",   default=DEFAULT_COUNTRY,  metavar="CC",
                     help="ISO 2-letter country code to narrow search: gb de fr jp au...")
     ap.add_argument("--units",     default=None,
