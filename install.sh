@@ -38,17 +38,20 @@ echo "|   StormShell  -  Installer            |"
 echo "+---------------------------------------+"
 echo ""
 
+# Read from /dev/tty directly so prompts work even when piped via curl
 if ! $KIOSK; then
-    read -rp "  Location (city name or postal code) [$LOCATION]: " i
+    exec 3</dev/tty
+    read -rp "  Location (city name or postal code) [$LOCATION]: " i <&3
     LOCATION="${i:-$LOCATION}"
-    read -rp "  Country code - optional (gb/de/jp/au...) [$COUNTRY]: " i
+    read -rp "  Country code - optional (gb/de/jp/au...) [$COUNTRY]: " i <&3
     COUNTRY="${i:-$COUNTRY}"
-    read -rp "  Temp units - leave blank for auto (fahrenheit/celsius) [$UNITS]: " i
+    read -rp "  Temp units - leave blank for auto (fahrenheit/celsius) [$UNITS]: " i <&3
     UNITS="${i:-$UNITS}"
-    read -rp "  Wind units - leave blank for auto (mph/kmh/ms/kn) [$WIND]: " i
+    read -rp "  Wind units - leave blank for auto (mph/kmh/ms/kn) [$WIND]: " i <&3
     WIND="${i:-$WIND}"
-    read -rp "  Install as kiosk service on HDMI display? [y/N]: " i
+    read -rp "  Install as kiosk service on HDMI display? [y/N]: " i <&3
     [[ "${i,,}" == "y" ]] && KIOSK=true
+    exec 3>&-
     echo ""
 fi
 
