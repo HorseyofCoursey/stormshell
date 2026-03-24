@@ -30,6 +30,11 @@ Will work on any Pi hardware on both Raspberry Pi OS Lite and the full desktop i
 
 ---
 
+## Display and Terminal Sizing
+Designed for terminal size 97×27 minimum, which is what you get with Terminus Bold 28×14 at 1080p on a Pi's TTY. You can make it bigger but the proportions will look off. 
+
+---
+
 ## Installation
 
 ```bash
