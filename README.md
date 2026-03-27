@@ -1,8 +1,8 @@
 # StormShell ☼
 
-A Python curses weather display for Raspberry Pi. Runs in an SSH terminal or as a full-screen HDMI kiosk with no desktop required. All ASCII art, no dependencies beyond the Python standard library.
+A Python curses weather display. Runs in any terminal over SSH or as a full-screen HDMI kiosk on Raspberry Pi. All ASCII art, no dependencies beyond the Python standard library.
 
-![Python](https://img.shields.io/badge/python-3.9%2B-blue) ![Platform](https://img.shields.io/badge/platform-Raspberry%20Pi-red) ![License](https://img.shields.io/badge/license-MIT-green)
+![Python](https://img.shields.io/badge/python-3.9%2B-blue) ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS-lightgrey) ![License](https://img.shields.io/badge/license-MIT-green)
 
 ---
 
@@ -10,28 +10,35 @@ A Python curses weather display for Raspberry Pi. Runs in an SSH terminal or as 
 
 - **Live weather** — temperature, feels like, humidity, wind, and a 4-hour forecast
 - **Weather animations** — hand-drawn ASCII art for sun, clouds, rain, snow, fog, storms and more
+- **Night mode** — automatically switches to star field + moon phase animation after sunset
 - **Analog clock** — ASCII art clock face with hour, minute, and second hands
 - **Digital clock** — full-screen big-digit display
 - **Moon phase** — calculated locally, no API needed
 - **Sunrise & sunset** times
 - **AQI bar** — color-coded air quality index
+- **Pollen count** — dominant type and severity (where available)
 - **Pressure gauge** — trend needle showing rising, steady, or falling
 - **Auto units** — Celsius/Fahrenheit and km/h/mph detected automatically from location
 - **Global locations** — city names, ZIP codes, or postal codes worldwide
 
 ---
 
-## Hardware
+## Works on any Linux or macOS terminal
 
-Will work on any Pi hardware on both Raspberry Pi OS Lite and the full desktop image. On desktop, just open a terminal and run stormshell --location "London". The --display kiosk mode is intended for headless/Lite setups..
+StormShell runs wherever Python 3.9+ is available. Open a terminal and run it over SSH, in a desktop terminal emulator, or directly on a console.
 
-- HDMI output via mini-HDMI adapter
-- Works over SSH in any terminal window
+> **Note:** `--kiosk` mode (full-screen HDMI output) is Raspberry Pi specific — it uses Linux TTY tools to take over the HDMI display without a desktop environment.
 
 ---
 
-## Display and Terminal Sizing
-Designed for terminal size 97×27 minimum, which is what you get with Terminus Bold 28×14 at 1080p on a Pi's TTY. You can make it bigger but the proportions will look off. 
+## Terminal Size
+
+Designed for **97×27 minimum**. This is what you get with Terminus Bold 28×14 at 1080p on a Pi's TTY. Larger terminals work but the layout is optimised for this size.
+
+For SSH, resize your terminal before running:
+```bash
+printf '\e[8;27;97t'
+```
 
 ---
 
@@ -39,6 +46,12 @@ Designed for terminal size 97×27 minimum, which is what you get with Terminus B
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/HorseyofCoursey/stormshell/main/install.sh | sudo bash
+```
+
+Or clone manually:
+```bash
+git clone https://github.com/HorseyofCoursey/stormshell.git
+cd stormshell && sudo ./install.sh
 ```
 
 ---
@@ -70,8 +83,9 @@ stormshell --location "Springfield" --country us
 stormshell --location "Richmond" --country gb
 stormshell --location "Perth" --country au
 
-# HDMI kiosk mode (outputs to TTY1)
-stormshell --display --location "London"
+# Kiosk mode — Raspberry Pi only, outputs to HDMI TTY1
+stormshell --kiosk --location "London"
+stormshell --display --location "London"   # legacy alias, same thing
 
 # Override units (auto-detected by default)
 stormshell --location "London" --units fahrenheit --wind mph
@@ -81,6 +95,7 @@ stormshell --preview
 
 # Preview a specific condition
 stormshell --preview --condition storm
+stormshell --preview --condition night
 ```
 
 ### Keys
@@ -99,7 +114,7 @@ stormshell --preview --condition storm
 | Source | Used for |
 |--------|----------|
 | [Open-Meteo](https://open-meteo.com) | Weather forecast, pressure, sunrise/sunset |
-| [Open-Meteo Air Quality](https://open-meteo.com/en/docs/air-quality-api) | AQI / PM2.5 |
+| [Open-Meteo Air Quality](https://open-meteo.com/en/docs/air-quality-api) | AQI / PM2.5 / pollen |
 | [Nominatim / OSM](https://nominatim.openstreetmap.org) | Location lookup |
 | Math | Moon phase (no API) |
 
@@ -109,7 +124,7 @@ No API keys required.
 
 ## Weather Conditions
 
-`sunny` · `partly_cloudy` · `cloudy` · `drizzle` · `rain` · `showers` · `heavy_rain` · `snow` · `blizzard` · `storm` · `fog`
+`sunny` · `partly_cloudy` · `cloudy` · `drizzle` · `rain` · `showers` · `heavy_rain` · `snow` · `blizzard` · `storm` · `fog` · `night` · `night_partly_cloudy`
 
 ---
 
