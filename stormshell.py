@@ -41,7 +41,7 @@ from datetime import datetime
 
 # ─── Config ───────────────────────────────────────────────────────────────────
 
-DEFAULT_LOCATION = "Shangri-la"
+DEFAULT_LOCATION = ""            # set by installer
 DEFAULT_COUNTRY  = ""           # empty = let Nominatim search globally
 REFRESH_SECONDS  = 300
 ANIMATE_FPS      = 3
@@ -180,11 +180,12 @@ def _sunny():
 
 
 # ── PARTLY CLOUDY ─────────────────────────────────────────────────────────────
-# User's sun fixed at top, one cloud scrolling over it.
+# User's sun with two clouds scrolling over it — drawn live in draw_frame
+# so each cloud loops independently with no disappearing.
 
 def _partly_cloudy():
     import random
-    rng = random.Random(42)   # seeded so layout is consistent across runs
+    rng = random.Random(42)
 
     SUN = [
         "      ;   :   ;      ",
@@ -209,60 +210,16 @@ def _partly_cloudy():
         "                     ",
     ]
 
-    cloud_shape  = 3
-    cloud_y      = rng.randint(0, 2)
-    cloud_w      = max(len(l.rstrip()) for l in _CLOUD_SHAPES[cloud_shape])
-    cloud_h      = len(_CLOUD_SHAPES[cloud_shape])
-    SCROLL_W     = ART_W + 7
-    total_w      = SCROLL_W + cloud_w
-
-    # Second cloud — different shape, appears 2/3 through the cycle
-    cloud2_shape  = rng.choice([0, 3, 4])
-    cloud2_y      = rng.randint(-1, 4)
-    cloud2_w      = max(len(l.rstrip()) for l in _CLOUD_SHAPES[cloud2_shape])
-    cloud2_offset = int(total_w * 2 / 3)
-
-    def draw_cloud(grid, shape_idx, cy, cx):
-        for row_i, line in enumerate(_CLOUD_SHAPES[shape_idx]):
-            r = cy + row_i
-            if r < 0 or r >= ART_H - 1: continue
-            stripped = line.rstrip()
-            if not stripped: continue
-            left  = next((i for i,c in enumerate(stripped) if c != ' '), None)
-            right = len(stripped)
-            if left is None: continue
-            for col_i in range(left, right):
-                col = cx + col_i
-                if 0 <= col < ART_W:
-                    grid[r][col] = ' '
-            for col_i, ch in enumerate(stripped):
-                if ch != ' ':
-                    col = cx + col_i
-                    if 0 <= col < ART_W:
-                        grid[r][col] = ch
-
+    # Pre-render sun frames (flicker) — clouds drawn live in draw_frame
     frames = []
-    for f in range(0, total_w):
+    for f in range(8):
         sun_art = SUN if (f // 4) % 2 == 0 else SUN2
         grid = [[' '] * ART_W for _ in range(ART_H)]
-
-        # Draw sun first
         for r, line in enumerate(sun_art):
             if r >= ART_H - 1: break
             for c, ch in enumerate(line):
                 if 0 <= c < ART_W:
                     grid[r][c] = ch
-
-        # First cloud
-        x1 = (f % total_w) - cloud_w
-        draw_cloud(grid, cloud_shape, cloud_y, x1)
-
-        # Second cloud — starts when first is 2/3 across
-        f2 = f - cloud2_offset
-        if f2 >= 0:
-            x2 = (f2 % total_w) - cloud2_w
-            draw_cloud(grid, cloud2_shape, cloud2_y, x2)
-
         frame = [_p(''.join(row)) for row in grid]
         frame[ART_H - 1] = _p("   PARTLY CLOUDY   ")
         frames.append(frame)
@@ -636,18 +593,56 @@ def _fog():
 
 # ─── Art table ────────────────────────────────────────────────────────────────
 
+# ── NIGHT CLEAR — static stars, moon phase drawn live in draw_frame ───────────
+
+def _night():
+    import random
+    rng = random.Random(99)
+    W, H = ART_W, ART_H - 1
+
+    grid = [[' '] * W for _ in range(H)]
+    for _ in range(80):
+        x, y = rng.randint(0, W-1), rng.randint(0, H-1)
+        grid[y][x] = '*'
+
+    frame = [_p(''.join(row)) for row in grid]
+    frame.append(_p("      CLEAR NIGHT      "))
+    return [frame[:ART_H]]
+
+
+# ── NIGHT PARTLY CLOUDY — static stars + scrolling cloud ──────────────────────
+
+def _night_cloudy():
+    import random
+    rng = random.Random(88)
+    W, H = ART_W, ART_H - 1
+
+    # Stars only — moon and clouds are drawn live in draw_frame
+    # so the draw order (stars → moon → clouds) is guaranteed
+    grid = [[' '] * W for _ in range(H)]
+    for _ in range(80):
+        x, y = rng.randint(0, W-1), rng.randint(0, H-1)
+        grid[y][x] = '*'
+
+    frame = [_p(''.join(row)) for row in grid]
+    frame.append(_p("    PARTLY CLOUDY NIGHT    "))
+    return [frame[:ART_H]]
+
+
 ART = {
-    "sunny":         {"frames": _sunny(),         "color": "yellow"},
-    "partly_cloudy": {"frames": _partly_cloudy(),  "color": "yellow"},
-    "cloudy":        {"frames": _cloudy(),          "color": "white"},
-    "drizzle":       {"frames": _drizzle(),         "color": "cyan"},
-    "rain":          {"frames": _rain(),            "color": "cyan"},
-    "heavy_rain":    {"frames": _heavy_rain(),      "color": "cyan"},
-    "showers":       {"frames": _showers(),         "color": "cyan"},
-    "snow":          {"frames": _snow(),            "color": "white"},
-    "blizzard":      {"frames": _blizzard(),        "color": "white"},
-    "storm":         {"frames": _storm(),           "color": "blue"},
-    "fog":           {"frames": _fog(),             "color": "white"},
+    "sunny":               {"frames": _sunny(),         "color": "yellow"},
+    "partly_cloudy":       {"frames": _partly_cloudy(),  "color": "yellow"},
+    "cloudy":              {"frames": _cloudy(),          "color": "white"},
+    "drizzle":             {"frames": _drizzle(),         "color": "cyan"},
+    "rain":                {"frames": _rain(),            "color": "cyan"},
+    "heavy_rain":          {"frames": _heavy_rain(),      "color": "cyan"},
+    "showers":             {"frames": _showers(),         "color": "cyan"},
+    "snow":                {"frames": _snow(),            "color": "white"},
+    "blizzard":            {"frames": _blizzard(),        "color": "white"},
+    "storm":               {"frames": _storm(),           "color": "blue"},
+    "fog":                 {"frames": _fog(),             "color": "white"},
+    "night":               {"frames": _night(),           "color": "white"},
+    "night_partly_cloudy": {"frames": _night_cloudy(),    "color": "white"},
 }
 
 # ─── Weather API ──────────────────────────────────────────────────────────────
@@ -804,11 +799,11 @@ def fetch_weather(lat, lon):
 
 
 def fetch_aqi(lat, lon):
-    """Fetch current US AQI from Open-Meteo air quality API. No key needed."""
+    """Fetch current US AQI and pollen from Open-Meteo air quality API."""
     params = urllib.parse.urlencode({
         "latitude":  lat,
         "longitude": lon,
-        "current":   "us_aqi,pm2_5",
+        "current":   "us_aqi,pm2_5,alder_pollen,birch_pollen,grass_pollen,mugwort_pollen,olive_pollen,ragweed_pollen",
         "timezone":  "auto",
     })
     try:
@@ -817,18 +812,33 @@ def fetch_aqi(lat, lon):
             timeout=8
         ) as r:
             data = json.loads(r.read())
-        aqi  = data["current"].get("us_aqi", None)
-        pm25 = data["current"].get("pm2_5", None)
+        c    = data["current"]
+        aqi  = c.get("us_aqi", None)
+        pm25 = c.get("pm2_5", None)
         if aqi is None:
             return None
-        # AQI category
         if   aqi <= 50:  cat, col = "Good",              "green"
         elif aqi <= 100: cat, col = "Moderate",          "yellow"
         elif aqi <= 150: cat, col = "Unhealthy (sens.)", "orange"
         elif aqi <= 200: cat, col = "Unhealthy",         "red"
         elif aqi <= 300: cat, col = "Very Unhealthy",    "red"
         else:            cat, col = "Hazardous",         "red"
-        return {"aqi": aqi, "cat": cat, "col": col, "pm25": pm25}
+
+        # Pollen — find dominant type
+        pollen_types = {
+            "Tree":    max(c.get("alder_pollen") or 0, c.get("birch_pollen") or 0, c.get("olive_pollen") or 0),
+            "Grass":   c.get("grass_pollen") or 0,
+            "Weed":    max(c.get("mugwort_pollen") or 0, c.get("ragweed_pollen") or 0),
+        }
+        dom_type  = max(pollen_types, key=pollen_types.get)
+        dom_value = pollen_types[dom_type]
+        if   dom_value == 0:   pollen = None
+        elif dom_value < 10:   pollen = {"type": dom_type, "level": "Low",       "value": int(dom_value)}
+        elif dom_value < 50:   pollen = {"type": dom_type, "level": "Medium",    "value": int(dom_value)}
+        elif dom_value < 200:  pollen = {"type": dom_type, "level": "High",      "value": int(dom_value)}
+        else:                  pollen = {"type": dom_type, "level": "Very High",  "value": int(dom_value)}
+
+        return {"aqi": aqi, "cat": cat, "col": col, "pm25": pm25, "pollen": pollen}
     except Exception:
         return None
 
@@ -1019,12 +1029,19 @@ def init_colors():
 # ─── Drawing helpers ──────────────────────────────────────────────────────────
 
 def ws(win, y, x, text, attr=0):
-    """Bounds-safe addstr — never raises."""
+    """Bounds-safe addstr — never raises, fills to last column."""
     h, w = win.getmaxyx()
     if y < 0 or y >= h or x < 0 or x >= w:
         return
+    text = str(text)[:max(0, w - x)]
     try:
-        win.addstr(y, x, str(text)[:max(0, w - x - 1)], attr)
+        if x + len(text) >= w:
+            # Write all but last char normally, then use insnstr for last
+            if len(text) > 1:
+                win.addstr(y, x, text[:-1], attr)
+            win.insnstr(y, x + len(text) - 1, text[-1], 1, attr)
+        else:
+            win.addstr(y, x, text, attr)
     except curses.error:
         pass
 
@@ -1040,6 +1057,21 @@ def draw_frame(win, weather, location, frame_idx, last_updated, status_msg):
     h, w = win.getmaxyx()
 
     cond      = weather["condition"]
+
+    # Switch to night animation if between sunset and sunrise
+    try:
+        now_hm    = datetime.now().strftime("%H:%M")
+        sunrise   = weather.get("sunrise", "06:00")
+        sunset    = weather.get("sunset",  "20:00")
+        is_night  = now_hm < sunrise or now_hm >= sunset
+    except Exception:
+        is_night  = False
+
+    if is_night and cond == "sunny":
+        cond = "night"
+    elif is_night and cond == "partly_cloudy":
+        cond = "night_partly_cloudy"
+
     art_def   = ART.get(cond, ART["cloudy"])
     art_color = curses.color_pair(COLOR_MAP.get(art_def["color"], CP_WHITE))
     frame     = art_def["frames"][frame_idx % len(art_def["frames"])]
@@ -1131,7 +1163,8 @@ def draw_frame(win, weather, location, frame_idx, last_updated, status_msg):
     for fc in weather.get("forecast", [])[:4]:
         icon = FC_ICON.get(wmo_to_condition(fc["code"]), "???")
         pct  = fc["precip_pct"]
-        line = f"| {fc['label']:>4}  {icon}  {fc['temp']:>5} |"
+        line = f"| {fc['label']:>4}  {icon}  {fc['temp']:>5}  |"
+        line = line[:21].ljust(21)
         if pct >= 70:   attr = curses.color_pair(CP_CYAN)
         elif pct >= 30: attr = curses.color_pair(CP_WHITE)
         else:           attr = curses.color_pair(CP_GREEN)
@@ -1139,6 +1172,22 @@ def draw_frame(win, weather, location, frame_idx, last_updated, status_msg):
         row += 1
 
     ws(win, row, 2, "+-------------------+", curses.color_pair(CP_CYAN))
+
+    # Pollen widget — right of forecast box, top-aligned
+    pollen = (weather.get("aqi") or {}).get("pollen")
+    if pollen:
+        p_col = 24
+        p_row = row - 5   # align with top of forecast data rows
+        level_color = {
+            "Low":       curses.color_pair(CP_GREEN),
+            "Medium":    curses.color_pair(CP_YELLOW),
+            "High":      curses.color_pair(CP_ORANGE),
+            "Very High": curses.color_pair(CP_RED),
+        }.get(pollen["level"], curses.color_pair(CP_WHITE))
+        ws(win, p_row,     p_col, "POLLEN", curses.color_pair(CP_DIM))
+        ws(win, p_row + 1, p_col, pollen["type"],  curses.color_pair(CP_WHITE) | curses.A_BOLD)
+        ws(win, p_row + 2, p_col, pollen["level"], level_color | curses.A_BOLD)
+
     row += 2   # restored gap before AQI
 
     # ── AQI bar ───────────────────────────────────────────────────────────────
@@ -1216,6 +1265,104 @@ def draw_frame(win, weather, location, frame_idx, last_updated, status_msg):
                     ws(win, row_y, right_x + ci, ch,
                        curses.color_pair(CP_YELLOW) | curses.A_BOLD)
 
+        # Live cloud overlay for partly_cloudy — independent looping clouds
+        if cond == "partly_cloudy":
+            import random as _rnd
+            rng_pc = _rnd.Random(42)
+            c1_shape = 3;  c1_y = rng_pc.randint(1, 3)
+            c2_shape = rng_pc.choice([0, 4]);  c2_y = rng_pc.randint(2, 5)
+            c3_shape = rng_pc.choice([1, 2]);  c3_y = rng_pc.randint(1, 4)
+            c1_w = max(len(l.rstrip()) for l in _CLOUD_SHAPES[c1_shape])
+            c2_w = max(len(l.rstrip()) for l in _CLOUD_SHAPES[c2_shape])
+            c3_w = max(len(l.rstrip()) for l in _CLOUD_SHAPES[c3_shape])
+            c1_total = right_w + c1_w + 2
+            c2_total = right_w + c2_w + 2
+            c3_total = right_w + c3_w + 2
+
+            def _draw_pc_cloud(shape, cy, cx):
+                for row_i, line in enumerate(_CLOUD_SHAPES[shape]):
+                    r = art_start + cy + row_i
+                    if r < art_start + 1 or r >= box_top: continue
+                    stripped = line.rstrip()
+                    if not stripped: continue
+                    left = next((i for i, c in enumerate(stripped) if c != ' '), None)
+                    if left is None: continue
+                    for col_i in range(left, len(stripped)):
+                        col = right_x + cx + col_i
+                        if right_x <= col < right_x + right_w:
+                            ws(win, r, col, ' ', art_color)
+                    for col_i, ch in enumerate(stripped):
+                        if ch != ' ':
+                            col = right_x + cx + col_i
+                            if right_x <= col < right_x + right_w:
+                                ws(win, r, col, ch, art_color | curses.A_BOLD)
+
+            _draw_pc_cloud(c1_shape, c1_y, (frame_idx // 3 % c1_total) - c1_w)
+            _draw_pc_cloud(c2_shape, c2_y, (frame_idx // 2 % c2_total) - c2_w)
+            _draw_pc_cloud(c3_shape, c3_y, (frame_idx // 4 % c3_total) - c3_w)
+        if cond in ("night", "night_partly_cloudy"):
+            night_moon_art = {
+                "New Moon":        ("   ____  ", "  /    \\ ", " |      |", "  \\____/ "),
+                "Waxing Crescent": ("   ____  ", "   \\   \\ ", "    )   |", "   /___/ "),
+                "First Quarter":   ("   _____ ", "  /  |  \\", " |   |   |", "  \\__|__/ "),
+                "Full Moon":       ("   ____  ", "  /    \\ ", " |      |", "  \\____/ "),
+                "Waxing Gibbous":  ("    ___  ", "   |   \\ ", "    |   |", "   |___/ "),
+                "Waning Gibbous":  ("    ___  ", "   /   | ", "  |   |  ", "   \\___|  "),
+                "Last Quarter":    ("   _____ ", "  /  |  \\", " |   |   |", "  \\__|__/ "),
+                "Waning Crescent": ("   ____  ", "  /   /  ", " |   (   ", "  \\___\\  "),
+            }
+            moon_nm  = weather.get("moon_name", "Full Moon")
+            n_art    = night_moon_art.get(moon_nm, night_moon_art["Full Moon"])
+            n_is_new = moon_nm == "New Moon"
+            n_color  = curses.color_pair(CP_BLUE) if n_is_new else curses.color_pair(CP_YELLOW)
+            n_x = right_x + (right_w - 9) // 2 + 5
+            n_y = art_start + 1
+            for li, line in enumerate(n_art):
+                row_y = n_y + li
+                if row_y >= box_top: break
+                ws(win, row_y, n_x, line, n_color | curses.A_BOLD)
+
+            # Draw clouds on top of moon for partly cloudy night
+            if cond == "night_partly_cloudy":
+                import random as _rng
+                rng2 = _rng.Random(88)
+                nc_W = right_w
+                c1_shape = 3
+                c1_y     = rng2.randint(0, 2)
+                c1_w     = max(len(l.rstrip()) for l in _CLOUD_SHAPES[c1_shape])
+                c2_shape = 0
+                c2_y     = c1_y + rng2.randint(0, 1)
+                c2_w     = max(len(l.rstrip()) for l in _CLOUD_SHAPES[c2_shape])
+                c2_off   = (nc_W + c1_w + 7) // 3
+                c2_spd   = 2
+                total_nc = nc_W + c2_w + 7 + c2_off
+
+                def _draw_nc_cloud(shape, cy, cx):
+                    for row_i, line in enumerate(_CLOUD_SHAPES[shape]):
+                        r = art_start + cy + row_i
+                        if r < 0 or r >= box_top: continue
+                        stripped = line.rstrip()
+                        if not stripped: continue
+                        left = next((i for i, c in enumerate(stripped) if c != ' '), None)
+                        if left is None: continue
+                        for col_i in range(left, len(stripped)):
+                            col = right_x + cx + col_i
+                            if right_x <= col < right_x + right_w:
+                                ws(win, r, col, ' ', art_color)
+                        for col_i, ch in enumerate(stripped):
+                            if ch != ' ':
+                                col = right_x + cx + col_i
+                                if right_x <= col < right_x + right_w:
+                                    ws(win, r, col, ch, art_color | curses.A_BOLD)
+
+                f = frame_idx
+                c1_total = right_w + c1_w + 2
+                c2_total = right_w + c2_w + 2
+                _draw_nc_cloud(c1_shape, c1_y,     (f // 3 % c1_total) - c1_w)
+                _draw_nc_cloud(c2_shape, c2_y + 1, (f // 2 % c2_total) - c2_w)
+
+            # Clouds already rendered in animation frames — no redraw needed
+
         # ── Clock (left of bottom box, with padding) ──────────────────────────
         now       = datetime.now()
         clock_col = right_x + 2
@@ -1266,17 +1413,39 @@ def draw_frame(win, weather, location, frame_idx, last_updated, status_msg):
 
         art      = moon_art.get(moon_name, moon_art["New Moon"])
 
-        sun_rise_str = f"Sunrise:  {rise}"
-        sun_set_str  = f"Sunset:   {sset}"
+        sun_rise_str = f" Sunrise:  {rise}"
+        sun_set_str  = f" Sunset:   {sset}"
         # widget_w still needed for pres_x calculation
         widget_w     = max(len(l) for l in list(art)
                            + [moon_name, sun_rise_str, sun_set_str, "MOON"])
 
         # New moon = all blue, full moon = all yellow
-        # Quarters = split blue/yellow at the | divider
+        # Quarters = per-character color maps from user design
         is_new     = moon_name == "New Moon"
         is_quarter = moon_name in ("First Quarter", "Last Quarter")
         base_color = curses.color_pair(CP_BLUE) if is_new else curses.color_pair(CP_YELLOW)
+
+        # Per-character color maps for quarter phases (y=yellow, b=blue, d=dim)
+        quarter_colors = {
+            "First Quarter": [
+                list('dddbbyyyd'),
+                list('bbbbbybby'),
+                list('bbbbbyyyyy'),
+                list('bbbbbyyyyd'),
+            ],
+            "Last Quarter": [
+                list('dddyyybbd'),
+                list('bbybbybbbb'),
+                list('yyyyyybbb b'),
+                list('yyyyyyyybd'),
+            ],
+        }
+        # Fix Last Quarter row 2 — 10 chars
+        quarter_colors["Last Quarter"][2] = list('yyyyyybbbb')
+
+        color_map = {'y': curses.color_pair(CP_YELLOW) | curses.A_BOLD,
+                     'b': curses.color_pair(CP_BLUE)   | curses.A_BOLD,
+                     'd': curses.color_pair(CP_DIM)    | curses.A_BOLD}
 
         # MOON label — stays at moon_x (user confirmed correct position)
         ws(win, box_top + 3, moon_x, "MOON",
@@ -1286,17 +1455,17 @@ def draw_frame(win, weather, location, frame_idx, last_updated, status_msg):
         art_x = moon_x - 3
         for i, line in enumerate(art):
             row = box_top + 4 + i
-            if is_quarter and i > 0:
-                pipe = line.find('|')
-                if pipe >= 0:
-                    ws(win, row, art_x, line[:pipe],
-                       curses.color_pair(CP_BLUE) | curses.A_BOLD)
-                    ws(win, row, art_x + pipe, '|',
-                       curses.color_pair(CP_DIM) | curses.A_BOLD)
-                    ws(win, row, art_x + pipe + 1, line[pipe + 1:],
-                       curses.color_pair(CP_YELLOW) | curses.A_BOLD)
-                else:
-                    ws(win, row, art_x, line, base_color | curses.A_BOLD)
+            if is_quarter:
+                cmap = quarter_colors[moon_name][i]
+                # Draw char by char grouping consecutive same-color runs
+                j = 0
+                while j < len(line):
+                    c = cmap[j] if j < len(cmap) else 'd'
+                    k = j + 1
+                    while k < len(line) and (k >= len(cmap) and c == 'd' or k < len(cmap) and cmap[k] == c):
+                        k += 1
+                    ws(win, row, art_x + j, line[j:k], color_map[c])
+                    j = k
             else:
                 ws(win, row, art_x, line, base_color | curses.A_BOLD)
 
@@ -1773,17 +1942,17 @@ if __name__ == "__main__":
         epilog="""
 Examples:
   stormshell --location "Chicago"
-  stormshell --location "60602"
+  stormshell --location "60076"
   stormshell --location "London" --country gb
   stormshell --location "Tokyo" --country jp
-  stormshell --display --location "Hong Kong"
-  stormshell --display --location "London" --country gb
+  stormshell --kiosk --location "Chicago"
+  stormshell --kiosk --location "London" --country gb
   stormshell --preview
   stormshell --preview --condition storm
         """,
     )
     ap.add_argument("--location",  default=DEFAULT_LOCATION, metavar="PLACE",
-                    help="City name, ZIP code, or postal code")
+                    help="City name, ZIP code, or postal code (default: Skokie, IL)")
     ap.add_argument("--country",   default=DEFAULT_COUNTRY,  metavar="CC",
                     help="ISO 2-letter country code to narrow search: gb de fr jp au...")
     ap.add_argument("--units",     default=None,
@@ -1796,14 +1965,20 @@ Examples:
     ap.add_argument("--sun-char",  default=SUN_CHAR, metavar="CHAR")
     ap.add_argument("--_tty_mode", action="store_true",
                     help=argparse.SUPPRESS)
-    ap.add_argument("--display",   action="store_true",
+    ap.add_argument("--kiosk",   action="store_true",
                     help="Send output to HDMI display (TTY1) instead of current terminal")
+    ap.add_argument("--display", action="store_true",
+                    help=argparse.SUPPRESS)   # legacy alias for --kiosk
     ap.add_argument("--preview",   action="store_true",
                     help="Preview all animations without fetching weather")
     ap.add_argument("--condition", default=CONDITIONS[0],
                     choices=CONDITIONS, metavar="COND",
                     help=f"Start preview on condition: {', '.join(CONDITIONS)}")
     args = ap.parse_args()
+
+    # --display is a legacy alias for --kiosk
+    if args.display:
+        args.kiosk = True
 
     # Track whether user explicitly set units — affects auto-metric logic
     _units_explicit = args.units is not None
@@ -1815,7 +1990,7 @@ Examples:
     SUN_CHAR        = args.sun_char
 
     # ── Display mode — takes over HDMI TTY1, restores it on exit ─────────────
-    if args.display:
+    if args.kiosk:
         # Re-launch with sudo if not already root
         if os.geteuid() != 0:
             os.execvp("sudo", ["sudo", sys.executable] + sys.argv)
@@ -1840,9 +2015,9 @@ Examples:
                        stdin=open(TTY), capture_output=True)
         time.sleep(0.3)
 
-        # Build child args — swap --display for --_tty_mode so the child
+        # Build child args — swap --kiosk for --_tty_mode so the child
         # goes straight to curses without repeating the TTY setup
-        child_args = [a for a in sys.argv[1:] if a not in ("--display",)]
+        child_args = [a for a in sys.argv[1:] if a not in ("--kiosk", "--display")]
         # Only inject units if user explicitly passed them — otherwise let
         # auto-metric detection work based on the resolved location country
         if "--units" not in child_args and _units_explicit:
