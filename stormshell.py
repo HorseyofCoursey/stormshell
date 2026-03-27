@@ -1942,7 +1942,7 @@ if __name__ == "__main__":
         epilog="""
 Examples:
   stormshell --location "Chicago"
-  stormshell --location "60076"
+  stormshell --location "60602"
   stormshell --location "London" --country gb
   stormshell --location "Tokyo" --country jp
   stormshell --kiosk --location "Chicago"
@@ -1952,7 +1952,7 @@ Examples:
         """,
     )
     ap.add_argument("--location",  default=DEFAULT_LOCATION, metavar="PLACE",
-                    help="City name, ZIP code, or postal code (default: Skokie, IL)")
+                    help="City name, ZIP code, or postal code (default: Chicago, IL)")
     ap.add_argument("--country",   default=DEFAULT_COUNTRY,  metavar="CC",
                     help="ISO 2-letter country code to narrow search: gb de fr jp au...")
     ap.add_argument("--units",     default=None,
