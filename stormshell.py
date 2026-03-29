@@ -37,7 +37,7 @@ import subprocess
 import argparse
 import urllib.request
 import urllib.parse
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -987,6 +987,7 @@ def parse_weather(data):
         "sunset":      sunset,
         "moon_name":   phase_name,
         "pressure":    pressure_data,
+        "utc_offset":  data.get("utc_offset_seconds", 0),
     }
 
 # ─── Color pairs ──────────────────────────────────────────────────────────────
@@ -1058,9 +1059,13 @@ def draw_frame(win, weather, location, frame_idx, last_updated, status_msg):
 
     cond      = weather["condition"]
 
+    # Compute location-local time using UTC offset from weather data
+    utc_offset = weather.get("utc_offset", 0)
+    loc_now    = datetime.utcnow() + timedelta(seconds=utc_offset)
+
     # Switch to night animation if between sunset and sunrise
     try:
-        now_hm    = datetime.now().strftime("%H:%M")
+        now_hm    = loc_now.strftime("%H:%M")
         sunrise   = weather.get("sunrise", "06:00")
         sunset    = weather.get("sunset",  "20:00")
         is_night  = now_hm < sunrise or now_hm >= sunset
@@ -1364,7 +1369,7 @@ def draw_frame(win, weather, location, frame_idx, last_updated, status_msg):
             # Clouds already rendered in animation frames — no redraw needed
 
         # ── Clock (left of bottom box, with padding) ──────────────────────────
-        now       = datetime.now()
+        now       = loc_now
         clock_col = right_x + 2
         draw_clock(win, box_top + 1, clock_col, now)   # moved up 1 row
 
@@ -1832,12 +1837,14 @@ def main(stdscr, location_arg, country, force_latin=False):
         # ── Draw ──────────────────────────────────────────────────────────────
         if now >= next_frame:
             AMPM_COUNTRIES = {"us","ca","au","nz","ph","eg","sa","pk","in"}
-            _cc = (weather or {}).get("cc", DEFAULT_COUNTRY or "us").lower()
-            use_ampm = _cc in AMPM_COUNTRIES
+            _cc        = (weather or {}).get("cc", DEFAULT_COUNTRY or "us").lower()
+            use_ampm   = _cc in AMPM_COUNTRIES
+            utc_offset = (weather or {}).get("utc_offset", 0)
+            loc_now    = datetime.utcnow() + timedelta(seconds=utc_offset)
             if clock_mode == 'analog':
-                draw_clock_fullscreen(stdscr, datetime.now(), use_ampm)
+                draw_clock_fullscreen(stdscr, loc_now, use_ampm)
             elif clock_mode == 'digital':
-                draw_digital_fullscreen(stdscr, datetime.now(), use_ampm)
+                draw_digital_fullscreen(stdscr, loc_now, use_ampm)
             elif weather is not None:
                 draw_frame(stdscr, weather, location,
                            frame_idx, last_updated, status_msg)
