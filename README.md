@@ -5,6 +5,7 @@ A Python curses weather display. Runs in any terminal over SSH or as a full-scre
 ![Python](https://img.shields.io/badge/python-3.9%2B-blue) ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS-lightgrey) ![License](https://img.shields.io/badge/license-MIT-green)
 
 ---
+<img width="767" height="449" alt="Image" src="https://github.com/user-attachments/assets/5792c626-f743-434a-b661-158c48ee5105" />
 
 ## Features
 
@@ -131,3 +132,9 @@ No API keys required.
 ## License
 
 MIT
+
+## Screenshot Samples
+<img width="784" height="446" alt="Image" src="https://github.com/user-attachments/assets/0646fd55-b42a-4cc0-9fc2-b92814a056dd" />
+<img width="816" height="460" alt="Image" src="https://github.com/user-attachments/assets/2b0832ad-8556-47b1-95cb-b77d94a55933" />
+<img width="1193" height="597" alt="Image" src="https://github.com/user-attachments/assets/3345c694-8e65-4629-89fb-b860098851b0" />
+
