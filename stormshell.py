@@ -37,7 +37,7 @@ import subprocess
 import argparse
 import urllib.request
 import urllib.parse
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 # ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -1061,7 +1061,7 @@ def draw_frame(win, weather, location, frame_idx, last_updated, status_msg):
 
     # Compute location-local time using UTC offset from weather data
     utc_offset = weather.get("utc_offset", 0)
-    loc_now    = datetime.utcnow() + timedelta(seconds=utc_offset)
+    loc_now    = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(seconds=utc_offset)
 
     # Switch to night animation if between sunset and sunrise
     try:
@@ -1840,7 +1840,7 @@ def main(stdscr, location_arg, country, force_latin=False):
             _cc        = (weather or {}).get("cc", DEFAULT_COUNTRY or "us").lower()
             use_ampm   = _cc in AMPM_COUNTRIES
             utc_offset = (weather or {}).get("utc_offset", 0)
-            loc_now    = datetime.utcnow() + timedelta(seconds=utc_offset)
+            loc_now    = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(seconds=utc_offset)
             if clock_mode == 'analog':
                 draw_clock_fullscreen(stdscr, loc_now, use_ampm)
             elif clock_mode == 'digital':
